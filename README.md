@@ -2,7 +2,20 @@
 
 A responsive task manager web application developed using vanilla HTML, CSS, and JavaScript. All tasks and user preferences persist locally inside the browser using the Web Storage API (`localStorage`), with no external frameworks or libraries required.
 
-Created for Web Programming – Assignment / Task 1.
+---
+
+Features:
+- Add new tasks with title, description, due date, and priority
+- Edit existing tasks
+- Delete tasks
+- Mark tasks as complete/incomplete
+- Filter tasks: All / Active / Completed
+- Search tasks by title
+- Sort tasks by due date and priority
+- Save tasks in localStorage (persist after refresh)
+- Responsive design for mobile and desktop
+- Dark mode toggle
+- Empty state message when no tasks exist
 
 ---
 
@@ -12,17 +25,16 @@ Created for Web Programming – Assignment / Task 1.
 * **GitHub Repository:** [https://github.com/Munadi2Laskar/todo-app](https://github.com/Munadi2Laskar/todo-app)
 
 ---
-
 ## Screenshots
 
 ### 1. Main Dashboard
-![Main Dashboard](./screenshots/screenshot-1.png)
+![Main Dashboard](./screenshots/screenshot%201.png)
 
 ### 2. Task Details & Filters
-![Task Details](./screenshots/screenshot-2.png)
+![Task Details](./screenshots/screenshot%202.png)
 
 ### 3. Mobile / Responsive View
-![Responsive View](./screenshots/screenshot-3.png)
+![Responsive View](./screenshots/screenshot%203.png)
 
 ---
 
