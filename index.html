@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Marked – To Do</title>
+  <meta name="description" content="Marked is a simple to-do app. Add tasks, sort them by priority, category and due date, and pick up where you left off.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='3' y='3' width='26' height='26' rx='8' fill='%233A3FD8'/%3E%3Crect x='8' y='17' width='16' height='5' rx='2.5' fill='%23FFD84D'/%3E%3Cpath d='M9.5 16.5l4.5 4.5 8.5-9.5' fill='none' stroke='%23fff' stroke-width='2.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+
+  <!-- Apply the saved theme before first paint to avoid a flash -->
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem('marked:theme');
+        if (!t) t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.dataset.theme = t;
+      } catch (e) {}
+    })();
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to tasks</a>
+
+  <!-- ========== Header ========== -->
+  <header class="app-header">
+    <button type="button" class="icon-btn menu-btn" id="menuBtn" aria-label="Filters" aria-expanded="false" aria-controls="sidebar">
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+
+    <a class="logo" href="./" aria-label="Marked, home">
+      <svg viewBox="0 0 32 32" width="30" height="30" aria-hidden="true">
+        <rect x="3" y="3" width="26" height="26" rx="8" fill="var(--accent)"/>
+        <rect x="8" y="17" width="16" height="5" rx="2.5" fill="#FFD84D"/>
+        <path d="M9.5 16.5l4.5 4.5 8.5-9.5" fill="none" stroke="#fff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span class="logo-text">Marked</span>
+    </a>
+
+    <div class="search">
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg>
+      <label class="sr-only" for="searchInput">Search tasks</label>
+      <input id="searchInput" type="search" placeholder="Search titles and descriptions" autocomplete="off">
+      <kbd aria-hidden="true">/</kbd>
+    </div>
+
+    <div class="header-actions">
+      <button type="button" class="icon-btn" id="themeBtn" aria-label="Switch to dark mode">
+        <svg class="icon icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/></svg>
+        <svg class="icon icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6 7 7M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4"/></svg>
+      </button>
+
+      <div class="user">
+        <button type="button" class="user-btn" id="userBtn" aria-haspopup="true" aria-expanded="false" aria-controls="userMenu">
+          <span class="avatar" id="avatar" aria-hidden="true">G</span>
+          <span class="user-name" id="userNameLabel">Guest</span>
+        </button>
+        <div class="menu" id="userMenu" hidden>
+          <label class="field">
+            <span>Your name</span>
+            <input class="input" id="userNameInput" type="text" maxlength="30" placeholder="Guest" autocomplete="off">
+          </label>
+          <p class="menu-note">No account needed. Your tasks stay in this browser.</p>
+          <div class="menu-actions">
+            <button type="button" class="menu-item" id="exportBtn">Export tasks (JSON)</button>
+            <button type="button" class="menu-item" id="importBtn">Import tasks…</button>
+            <button type="button" class="menu-item danger" id="resetBtn">Delete all data</button>
+          </div>
+          <input type="file" id="importInput" accept="application/json,.json" hidden>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <!-- ========== Sidebar ========== -->
+    <aside class="sidebar" id="sidebar" aria-label="Filters">
+      <section class="side-section" aria-labelledby="h-show">
+        <h2 id="h-show">Show</h2>
+        <ul class="nav" id="statusList">
+          <li><button type="button" class="nav-item" data-status="all"><span class="nav-label">All</span><span class="count" data-count="all">0</span></button></li>
+          <li><button type="button" class="nav-item" data-status="active"><span class="nav-label">Active</span><span class="count" data-count="active">0</span></button></li>
+          <li><button type="button" class="nav-item" data-status="completed"><span class="nav-label">Completed</span><span class="count" data-count="completed">0</span></button></li>
+        </ul>
+      </section>
+
+      <section class="side-section" aria-labelledby="h-cat">
+        <h2 id="h-cat">Categories</h2>
+        <ul class="nav" id="categoryList"></ul>
+        <form class="cat-form" id="categoryForm">
+          <label class="sr-only" for="categoryName">New category name</label>
+          <input class="input" id="categoryName" type="text" maxlength="24" placeholder="New category" autocomplete="off" required>
+          <label class="sr-only" for="categoryColor">Category color</label>
+          <input class="color-input" id="categoryColor" type="color" value="#3a3fd8">
+          <button class="btn small" type="submit">Add</button>
+        </form>
+      </section>
+
+      <section class="side-section" aria-labelledby="h-pri">
+        <h2 id="h-pri">Priority</h2>
+        <ul class="nav" id="priorityList">
+          <li><button type="button" class="nav-item" data-priority="all"><span class="nav-label">Any priority</span><span class="count" data-count="all">0</span></button></li>
+          <li><button type="button" class="nav-item" data-priority="high"><span class="dot p-high"></span><span class="nav-label">High</span><span class="count" data-count="high">0</span></button></li>
+          <li><button type="button" class="nav-item" data-priority="medium"><span class="dot p-medium"></span><span class="nav-label">Medium</span><span class="count" data-count="medium">0</span></button></li>
+          <li><button type="button" class="nav-item" data-priority="low"><span class="dot p-low"></span><span class="nav-label">Low</span><span class="count" data-count="low">0</span></button></li>
+        </ul>
+      </section>
+    </aside>
+    <div class="scrim" id="scrim"></div>
+
+    <!-- ========== Main ========== -->
+    <main class="main" id="main">
+      <form class="add-form" id="addForm" aria-label="Add a task">
+        <div class="add-row">
+          <label class="sr-only" for="newTitle">Task title</label>
+          <input class="input input-lg" id="newTitle" type="text" maxlength="120" placeholder="What needs doing?" autocomplete="off" required>
+          <button class="btn primary" type="submit">Add task</button>
+        </div>
+        <label class="field">
+          <span>Description (optional)</span>
+          <textarea class="input" id="newDesc" rows="2" maxlength="500"></textarea>
+        </label>
+        <div class="add-grid">
+          <label class="field"><span>Due date</span><input class="input" id="newDue" type="date"></label>
+          <label class="field">
+            <span>Priority</span>
+            <select class="input" id="newPriority">
+              <option value="low">Low</option>
+              <option value="medium" selected>Medium</option>
+              <option value="high">High</option>
+            </select>
+          </label>
+          <label class="field"><span>Category</span><select class="input" id="newCategory"></select></label>
+        </div>
+      </form>
+
+      <div class="list-head">
+        <div>
+          <h1 id="viewTitle" tabindex="-1">All tasks</h1>
+          <p class="result-info" id="resultInfo" aria-live="polite"></p>
+        </div>
+        <div class="list-tools">
+          <button type="button" class="btn ghost small" id="clearFilters" hidden>Clear filters</button>
+          <label class="sort">
+            <span>Sort by</span>
+            <select class="input" id="sortSelect">
+              <option value="newest">Newest</option>
+              <option value="due">Due date</option>
+              <option value="priority">Priority</option>
+            </select>
+          </label>
+        </div>
+      </div>
+
+      <ul class="task-list" id="taskList" hidden></ul>
+
+      <div class="empty" id="emptyState" hidden>
+        <svg viewBox="0 0 96 80" width="96" height="80" aria-hidden="true">
+          <rect x="14" y="8" width="68" height="64" rx="12" fill="var(--surface-2)" stroke="var(--line-strong)" stroke-width="2"/>
+          <rect x="28" y="40" width="40" height="9" rx="4.5" fill="var(--mark)"/>
+          <path d="M30 38l7 7 13-14" fill="none" stroke="var(--accent)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M30 60h36" stroke="var(--line-strong)" stroke-width="3" stroke-linecap="round"/>
+        </svg>
+        <h2 id="emptyTitle">No tasks yet — add one!</h2>
+        <p id="emptyText"></p>
+        <button type="button" class="btn small" id="emptyClear" hidden>Clear filters</button>
+      </div>
+    </main>
+  </div>
+
+  <!-- ========== Footer ========== -->
+  <footer class="app-footer">
+    <span class="left-count" id="leftCount" aria-live="polite">No tasks yet</span>
+    <button type="button" class="btn ghost small" id="clearCompleted" disabled>Clear completed</button>
+    <span class="saved" id="savedStatus">Nothing saved yet</span>
+    <button type="button" class="btn ghost small" id="helpBtn">Shortcuts <kbd aria-hidden="true">?</kbd></button>
+  </footer>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <!-- ========== Dialogs ========== -->
+  <dialog id="editDialog" aria-labelledby="editHeading">
+    <form id="editForm" class="dialog-body">
+      <h2 id="editHeading">Edit task</h2>
+      <label class="field"><span>Title</span><input class="input" id="editTitle" type="text" maxlength="120" required></label>
+      <label class="field"><span>Description (optional)</span><textarea class="input" id="editDesc" rows="3" maxlength="500"></textarea></label>
+      <div class="add-grid">
+        <label class="field"><span>Due date</span><input class="input" id="editDue" type="date"></label>
+        <label class="field">
+          <span>Priority</span>
+          <select class="input" id="editPriority">
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+          </select>
+        </label>
+        <label class="field"><span>Category</span><select class="input" id="editCategory"></select></label>
+      </div>
+      <div class="dialog-actions">
+        <button type="button" class="btn ghost" id="editCancel">Cancel</button>
+        <button type="submit" class="btn primary">Save changes</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="confirmDialog" aria-labelledby="confirmTitle">
+    <form method="dialog" class="dialog-body">
+      <h2 id="confirmTitle">Are you sure?</h2>
+      <p id="confirmText"></p>
+      <div class="dialog-actions">
+        <button type="submit" value="cancel" class="btn ghost">Cancel</button>
+        <button type="submit" value="ok" class="btn danger" id="confirmOk">Delete</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="helpDialog" aria-labelledby="helpHeading">
+    <div class="dialog-body">
+      <h2 id="helpHeading">Keyboard shortcuts</h2>
+      <p class="muted">Shortcuts work when you're not typing in a field.</p>
+      <dl class="shortcuts">
+        <div><dt><kbd>n</kbd></dt><dd>New task</dd></div>
+        <div><dt><kbd>/</kbd></dt><dd>Search</dd></div>
+        <div><dt><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd></dt><dd>Show all, active or completed</dd></div>
+        <div><dt><kbd>t</kbd></dt><dd>Switch light or dark theme</dd></div>
+        <div><dt><kbd>?</kbd></dt><dd>Show this list</dd></div>
+        <div><dt><kbd>Esc</kbd></dt><dd>Clear search, close menus and dialogs</dd></div>
+      </dl>
+      <div class="dialog-actions">
+        <button type="button" class="btn primary" id="helpClose">Got it</button>
+      </div>
+    </div>
+  </dialog>
+
+  <noscript><p class="noscript">Marked needs JavaScript to run. Turn it on and reload the page.</p></noscript>
+
+  <script src="js/storage.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
